@@ -57,20 +57,28 @@ class AIService {
   /**
    * Generate multi-agent responses for a user message
    */
-  async generateMultiAgentResponses(userMessage) {
+  async generateMultiAgentResponses(userMessage, activeAgents = null, customAgentsList = null) {
     if (!this.genAI) {
       throw new Error('AI service not configured - GEMINI_API_KEY missing');
     }
 
     try {
+      // Use combined agents list if provided, otherwise use default agents
+      const ALL_AGENTS = customAgentsList || AI_AGENTS;
+      
+      // Use provided active agents or all agents
+      const agentsToConsider = activeAgents 
+        ? ALL_AGENTS.filter(agent => activeAgents.includes(agent.id))
+        : ALL_AGENTS;
+
       // Determine which agents will respond based on their response rate
-      const respondingAgents = AI_AGENTS.filter(agent => 
+      const respondingAgents = agentsToConsider.filter(agent => 
         Math.random() < agent.responseRate
       );
 
       // If no agents respond, ensure at least one does
-      if (respondingAgents.length === 0) {
-        respondingAgents.push(AI_AGENTS[0]);
+      if (respondingAgents.length === 0 && agentsToConsider.length > 0) {
+        respondingAgents.push(agentsToConsider[0]);
       }
 
       // Generate responses from each agent in parallel
@@ -82,7 +90,7 @@ class AIService {
 
       return {
         agents: agentResponses.filter(response => response !== null),
-        totalAgents: AI_AGENTS.length,
+        totalAgents: agentsToConsider.length,
         respondingAgents: respondingAgents.length
       };
 
@@ -99,8 +107,8 @@ class AIService {
     try {
       const model = this.genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
       
-      // Build agent-specific prompt
-      const systemContext = agent.systemPrompt;
+      // Build agent-specific prompt - handle both default and custom agents
+      const systemContext = agent.systemPrompt || `You are ${agent.name}. ${agent.personality}. Provide helpful responses in your unique style.`;
       
       const prompt = `${systemContext}
 
@@ -132,8 +140,6 @@ Keep your response authentic to your personality and expertise. Be helpful but s
       return null;
     }
   }
-
 }
-  
 
 module.exports = new AIService();

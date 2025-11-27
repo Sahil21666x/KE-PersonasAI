@@ -64,6 +64,8 @@ app.get('/health', (req, res) => {
 app.use('/api/auth', authRoutes);
 // app.use('/api/conversations', conversationsRoutes);
 const aiRoutes = require('./routes/aiRoutes');
+const conversationsRoutes = require('./routes/chat');
+app.use('/api', conversationsRoutes);
  app.use('/api/conversations', aiRoutes);
 
 

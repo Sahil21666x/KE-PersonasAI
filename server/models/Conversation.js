@@ -1,45 +1,43 @@
+// models/Conversation.js
 const mongoose = require('mongoose');
 
-const MessageSchema = new mongoose.Schema({
-  role: {
+const conversationSchema = new mongoose.Schema({
+  _id: {
     type: String,
-    enum: ['user', 'assistant'],
-    required: true
+    default: () => `conv-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
   },
-  content: {
+  user_id: {
     type: String,
-    required: true
-  },
-  timestamp: {
-    type: Date,
-    default: Date.now
-  }
-}, { _id: false });
-
-const ConversationSchema = new mongoose.Schema({
-  userId: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'User',
-    required: true
+    required: true,
+    ref: 'User'
   },
   title: {
     type: String,
-    default: 'New Conversation'
+    required: true
   },
-  messages: [MessageSchema],
-  context: {
-    type: String, // Stored AI context for continuity
-    default: ''
+  type: {
+    type: String,
+    enum: ['single', 'group'],
+    default: 'single'
   },
-  isActive: {
-    type: Boolean,
-    default: true
+  agents: [{
+    type: String,
+    required: true
+  }],
+  members: {
+    type: Number,
+    default: 1
+  },
+  last_read: {
+    type: Date,
+    default: null
   }
 }, {
   timestamps: true
 });
 
-// Index for user conversations
-ConversationSchema.index({ userId: 1, createdAt: -1 });
+// Index for faster queries
+conversationSchema.index({ user_id: 1, updatedAt: -1 });
+conversationSchema.index({ _id: 1, user_id: 1 });
 
-module.exports = mongoose.model('Conversation', ConversationSchema);
+module.exports = mongoose.model('Conversation', conversationSchema);
